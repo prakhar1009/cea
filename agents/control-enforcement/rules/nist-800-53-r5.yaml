@@ -1,0 +1,170 @@
+# NIST 800-53 Rev 5 Control Rules
+# Week 1: Phase 1 - First 5 Controls
+
+# AC-2: Account Management
+- id: nist-800-53-r5-ac-2
+  framework: nist-800-53-r5
+  title: AC-2 - Account Management
+  description: |
+    The organization manages system accounts including establishing, activating,
+    modifying, reviewing, disabling, and removing accounts. The organization
+    reviews accounts at least annually.
+  parameters:
+    max_days_since_review: 365
+  version: "1.0.0"
+  when:
+    - fact: iam.account_management.enabled
+      equals: true
+    - fact: iam.account_review.last_date
+      ageLessThan: "365 days"
+    - fact: iam.inactive_accounts.disabled
+      equals: true
+  passIf: all
+  evidence:
+    - iam.account_management.enabled
+    - iam.account_review.last_date
+    - iam.inactive_accounts.count
+    - iam.inactive_accounts.disabled
+  failMessage: |
+    Account management controls are not fully implemented. Ensure:
+    1. Account management is enabled
+    2. Accounts are reviewed at least annually
+    3. Inactive accounts are disabled
+  manualIf:
+    - fact: iam.account_management.requires_review
+      equals: true
+
+# AC-3: Access Enforcement
+- id: nist-800-53-r5-ac-3
+  framework: nist-800-53-r5
+  title: AC-3 - Access Enforcement
+  description: |
+    The system enforces approved authorizations for logical access to information
+    and system resources in accordance with applicable access control policies.
+  parameters:
+    rbac_enabled: true
+  version: "1.0.0"
+  when:
+    - fact: iam.rbac.enabled
+      equals: true
+    - fact: iam.authorization.enforced
+      equals: true
+    - fact: iam.unauthorized_access.count
+      lessThanOrEqual: 0
+  passIf: all
+  evidence:
+    - iam.rbac.enabled
+    - iam.authorization.enforced
+    - iam.unauthorized_access.count
+    - iam.access_policies.count
+  failMessage: |
+    Access enforcement controls are not properly configured. Ensure:
+    1. RBAC is enabled and configured
+    2. Authorization is enforced at all entry points
+    3. No unauthorized access attempts in last period
+
+# AC-7: Unsuccessful Logon Attempts
+- id: nist-800-53-r5-ac-7
+  framework: nist-800-53-r5
+  title: AC-7 - Unsuccessful Logon Attempts
+  description: |
+    The system enforces a limit of consecutive invalid logon attempts by a user
+    during a time period and automatically locks the account when the maximum
+    number of unsuccessful attempts is exceeded.
+  parameters:
+    max_failed_attempts: 5
+    lockout_duration_minutes: 30
+  version: "1.0.0"
+  when:
+    - fact: iam.lockout.enabled
+      equals: true
+    - fact: iam.lockout.max_attempts
+      lessThanOrEqual: 5
+    - fact: iam.lockout.duration_minutes
+      greaterThan: 15
+  passIf: all
+  evidence:
+    - iam.lockout.enabled
+    - iam.lockout.max_attempts
+    - iam.lockout.duration_minutes
+    - iam.lockout.events_last_30_days
+  failMessage: |
+    Account lockout policy does not meet requirements. Ensure:
+    1. Account lockout is enabled
+    2. Maximum failed attempts is 5 or less
+    3. Lockout duration is at least 15 minutes
+
+# IA-2: Identification and Authentication
+- id: nist-800-53-r5-ia-2
+  framework: nist-800-53-r5
+  title: IA-2 - Identification and Authentication (Organizational Users)
+  description: |
+    The system uniquely identifies and authenticates organizational users
+    (or processes acting on behalf of organizational users).
+  parameters:
+    mfa_required: true
+  version: "1.0.0"
+  when:
+    - fact: iam.authentication.enabled
+      equals: true
+    - fact: iam.mfa.enforced
+      equals: true
+    - fact: iam.mfa.coverage_percent
+      greaterThan: 95
+  passIf: all
+  evidence:
+    - iam.authentication.enabled
+    - iam.mfa.enforced
+    - iam.mfa.coverage_percent
+    - iam.mfa.methods
+    - iam.users.total
+    - iam.users.with_mfa
+  failMessage: |
+    Multi-factor authentication is not properly enforced. Ensure:
+    1. Authentication mechanisms are enabled
+    2. MFA is enforced for all users
+    3. At least 95% of users have MFA enabled
+  manualIf:
+    - fact: iam.mfa.exceptions.count
+      greaterThan: 0
+
+# SC-7: Boundary Protection
+- id: nist-800-53-r5-sc-7
+  framework: nist-800-53-r5
+  title: SC-7 - Boundary Protection
+  description: |
+    The system monitors and controls communications at the external boundary
+    of the system and at key internal boundaries within the system.
+  parameters:
+    firewall_required: true
+  version: "1.0.0"
+  when:
+    - fact: network.firewall.enabled
+      equals: true
+    - fact: network.firewall.rules.count
+      greaterThan: 0
+    - fact: network.default_deny.enabled
+      equals: true
+    - fact: network.boundary_monitoring.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - network.firewall.enabled
+    - network.firewall.rules.count
+    - network.default_deny.enabled
+    - network.boundary_monitoring.enabled
+    - network.open_ports.count
+    - network.blocked_attempts_last_24h
+  failMessage: |
+    Boundary protection controls are incomplete. Ensure:
+    1. Firewall is enabled and configured
+    2. Default-deny policy is in effect
+    3. Boundary monitoring is active
+    4. Network ingress/egress is controlled
+  nlp:
+    enabled: false
+    policySearchQuery: "network boundary firewall security perimeter"
+    requiredConstraints:
+      - type: security_policy
+        contains: ["firewall", "boundary", "monitoring"]
+    alignmentThreshold: 0.85
