@@ -1,0 +1,324 @@
+// Compiledger CEA - Database Schema
+// Week 1: Phase 1 Sprint 1
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// TENANT & PROJECT MODELS
+// ============================================================================
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  tier      TierType @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+  users    User[]
+
+  @@index([slug])
+  @@map("tenants")
+}
+
+model User {
+  id       String @id @default(uuid())
+  tenantId String
+  email    String @unique
+  name     String
+  role     String
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([email])
+  @@map("users")
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  slug        String
+  environment String   @default("production") // production, staging, dev
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  controls    Control[]
+  facts       Fact[]
+  suggestions Suggestion[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("projects")
+}
+
+// ============================================================================
+// FRAMEWORK & CONTROL MODELS
+// ============================================================================
+
+model Framework {
+  id         String   @id @default(uuid())
+  name       String // "NIST 800-53 Rev 5"
+  slug       String   @unique // "nist-800-53-r5"
+  catalogUrl String? // OSCAL catalog URL
+  version    String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  controls Control[]
+
+  @@index([slug])
+  @@map("frameworks")
+}
+
+model Control {
+  id              String        @id @default(uuid())
+  projectId       String
+  frameworkId     String
+  controlId       String // e.g., "AC-2", "CC6.1"
+  title           String
+  description     String        @db.Text
+  parameters      Json // Framework-specific params { "max_days": 30 }
+  criticality     Criticality   @default(MEDIUM)
+  parentControlId String?
+  currentStatus   ControlStatus @default(NOT_EVALUATED)
+  lastEvaluatedAt DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  project       Project             @relation(fields: [projectId], references: [id])
+  framework     Framework           @relation(fields: [frameworkId], references: [id])
+  parentControl Control?            @relation("ControlHierarchy", fields: [parentControlId], references: [id])
+  childControls Control[]           @relation("ControlHierarchy")
+  evaluations   ControlEvaluation[]
+  suggestions   Suggestion[]
+
+  @@unique([projectId, frameworkId, controlId])
+  @@index([projectId, currentStatus])
+  @@index([frameworkId, controlId])
+  @@map("controls")
+}
+
+// ============================================================================
+// EVALUATION MODELS
+// ============================================================================
+
+model ControlEvaluation {
+  id             String        @id @default(uuid())
+  controlId      String
+  projectId      String
+  runId          String // Batch evaluation identifier
+  status         ControlStatus
+  rationale      String        @db.Text
+  evidenceRefs   Json // Array of evidence identifiers
+  factsHash      String // SHA-256 of facts state (reproducibility)
+  rulesetHash    String // Hash of rule definition
+  rulesetVersion String // Semver of ruleset
+  nlpScore       Float? // Phase 3 - NLP alignment score
+  riskScore      Float? // Phase 4 - Risk scoring
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  control Control @relation(fields: [controlId], references: [id])
+
+  @@index([controlId, createdAt])
+  @@index([projectId, runId])
+  @@index([factsHash, rulesetHash])
+  @@map("control_evaluations")
+}
+
+model EvaluationRun {
+  id            String    @id @default(uuid())
+  projectId     String
+  trigger       String // "manual", "event:sbom.uploaded", "scheduled"
+  triggeredBy   String? // User ID or system
+  totalControls Int
+  passed        Int
+  failed        Int
+  manual        Int
+  notApplicable Int
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@index([projectId, startedAt])
+  @@map("evaluation_runs")
+}
+
+// ============================================================================
+// FACT STORE
+// ============================================================================
+
+model Fact {
+  id          String    @id @default(uuid())
+  projectId   String
+  key         String // "sbom.present", "iam.mfa.enforced"
+  value       Json // true, 42, "enabled", etc.
+  source      String // "sbom", "k8s", "vc_registry"
+  sourceId    String? // Foreign key to source entity
+  metadata    Json? // Additional context
+  collectedAt DateTime
+  expiresAt   DateTime? // For TTL facts (e.g., VC validity)
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, key, source])
+  @@index([projectId, key])
+  @@index([expiresAt])
+  @@map("facts")
+}
+
+// ============================================================================
+// POLICY & NLP (Phase 3)
+// ============================================================================
+
+model PolicySegment {
+  id           String   @id @default(uuid())
+  projectId    String
+  path         String // "policies/access-control.md"
+  lineNumber   Int?
+  text         String   @db.Text
+  embedding    Float[] // Vector for semantic search (pgvector in Phase 3)
+  version      String // Git SHA or version tag
+  baselineHash String // Hash for drift detection
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([projectId, path])
+  @@index([version])
+  @@map("policy_segments")
+}
+
+// ============================================================================
+// CREDENTIAL STATUS (Phase 3)
+// ============================================================================
+
+model VcStatus {
+  id          String   @id @default(uuid())
+  projectId   String
+  subjectDid  String // DID of entity (user, service, etc.)
+  vcId        String   @unique
+  vcType      String // "AccessReviewerCredential"
+  state       VcState  @default(VALID)
+  notBefore   DateTime
+  notAfter    DateTime
+  issuerDid   String
+  lastChecked DateTime @default(now())
+
+  @@index([projectId, subjectDid])
+  @@index([state, notAfter])
+  @@map("vc_status")
+}
+
+// ============================================================================
+// SUGGESTION & REMEDIATION (Phase 2)
+// ============================================================================
+
+model Suggestion {
+  id         String           @id @default(uuid())
+  controlId  String
+  projectId  String
+  type       SuggestionType // POLICY, CONFIG, CODE
+  diff       String           @db.Text // Unified diff format
+  targetPath String
+  confidence Confidence       @default(MEDIUM)
+  status     SuggestionStatus @default(PENDING)
+  appliedAt  DateTime?
+  rejectedAt DateTime?
+  metadata   Json? // Additional context (PR number, reviewer, etc.)
+  createdAt  DateTime         @default(now())
+
+  control Control @relation(fields: [controlId], references: [id])
+
+  @@index([projectId, status])
+  @@index([controlId])
+  @@map("suggestions")
+}
+
+// ============================================================================
+// AUDIT LOG
+// ============================================================================
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  tenantId     String
+  userId       String?
+  action       String // "POST /api/v1/controls/evaluate"
+  resourceType String // "control", "suggestion", etc.
+  resourceId   String?
+  before       Json? // State before change
+  after        Json? // State after change
+  metadata     Json? // Additional context
+  ipAddress    String?
+  userAgent    String?
+  timestamp    DateTime @default(now())
+
+  @@index([tenantId, timestamp])
+  @@index([resourceType, resourceId])
+  @@index([userId, timestamp])
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum TierType {
+  FREE
+  TEAM
+  ENTERPRISE
+}
+
+enum ControlStatus {
+  PASS
+  FAIL
+  MANUAL
+  NOT_APPLICABLE
+  NOT_EVALUATED
+}
+
+enum Criticality {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum VcState {
+  VALID
+  EXPIRED
+  REVOKED
+}
+
+enum SuggestionType {
+  POLICY
+  CONFIG
+  CODE
+}
+
+enum SuggestionStatus {
+  PENDING
+  APPROVED
+  APPLIED
+  REJECTED
+}
+
+enum Confidence {
+  LOW
+  MEDIUM
+  HIGH
+}

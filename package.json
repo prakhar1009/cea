@@ -1,0 +1,49 @@
+{
+  "name": "compiledger-cea",
+  "version": "1.0.0",
+  "description": "Control Enforcement Agent for Compiledger Platform",
+  "private": true,
+  "workspaces": [
+    "agents/*",
+    "libs/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "start:cea": "npm run dev --workspace=@compiledger/cea",
+    "migrate": "npm run migrate --workspace=@compiledger/database",
+    "migrate:dev": "npm run migrate:dev --workspace=@compiledger/database",
+    "migrate:deploy": "npm run migrate:deploy --workspace=@compiledger/database",
+    "db:studio": "npm run db:studio --workspace=@compiledger/database",
+    "db:seed": "npm run db:seed --workspace=@compiledger/database"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "prettier": "^3.1.0",
+    "turbo": "^1.11.0",
+    "typescript": "^5.3.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "compliance",
+    "control-enforcement",
+    "nist",
+    "soc2",
+    "oscal"
+  ],
+  "author": "Compiledger Platform Team",
+  "license": "PROPRIETARY"
+}

@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: compiledger
+  labels:
+    name: compiledger
+    environment: production
+    managed-by: platform-team
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compiledger-quota
+  namespace: compiledger
+spec:
+  hard:
+    requests.cpu: "50"
+    requests.memory: 100Gi
+    persistentvolumeclaims: "20"
+    services.loadbalancers: "5"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: compiledger-limits
+  namespace: compiledger
+spec:
+  limits:
+  - max:
+      cpu: "4"
+      memory: 8Gi
+    min:
+      cpu: "100m"
+      memory: 128Mi
+    default:
+      cpu: "1"
+      memory: 1Gi
+    defaultRequest:
+      cpu: "500m"
+      memory: 512Mi
+    type: Container

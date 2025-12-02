@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nats-config
+  namespace: compiledger
+data:
+  nats.conf: |
+    # NATS JetStream Configuration for Compiledger CEA
+    
+    # Server settings
+    port: 4222
+    http_port: 8222
+    
+    # Clustering (for 3-node cluster)
+    cluster {
+      name: compiledger-cluster
+      port: 6222
+      routes = [
+        nats://nats-0.nats:6222
+        nats://nats-1.nats:6222
+        nats://nats-2.nats:6222
+      ]
+    }
+    
+    # JetStream
+    jetstream {
+      store_dir: /data
+      max_file_store: 10GB
+    }
+    
+    # Monitoring
+    server_name: $SERVER_NAME
+    
+    # Logging
+    debug: false
+    trace: false
+    logtime: true
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nats
+  namespace: compiledger
+spec:
+  serviceName: nats
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nats
+  template:
+    metadata:
+      labels:
+        app: nats
+    spec:
+      containers:
+      - name: nats
+        image: nats:2.10-alpine
+        ports:
+        - containerPort: 4222
+          name: client
+        - containerPort: 8222
+          name: monitoring
+        - containerPort: 6222
+          name: cluster
+        env:
+        - name: SERVER_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        command:
+        - /nats-server
+        - --config
+        - /etc/nats/nats.conf
+        volumeMounts:
+        - name: nats-storage
+          mountPath: /data
+        - name: nats-config-volume
+          mountPath: /etc/nats/nats.conf
+          subPath: nats.conf
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8222
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8222
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+      volumes:
+      - name: nats-config-volume
+        configMap:
+          name: nats-config
+  volumeClaimTemplates:
+  - metadata:
+      name: nats-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nats
+  namespace: compiledger
+spec:
+  selector:
+    app: nats
+  ports:
+  - port: 4222
+    targetPort: 4222
+    name: client
+  - port: 8222
+    targetPort: 8222
+    name: monitoring
+  - port: 6222
+    targetPort: 6222
+    name: cluster
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nats-monitoring
+  namespace: compiledger
+spec:
+  type: ClusterIP
+  selector:
+    app: nats
+  ports:
+  - port: 8222
+    targetPort: 8222
+    name: monitoring
