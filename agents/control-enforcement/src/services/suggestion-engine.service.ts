@@ -363,7 +363,7 @@ jobs:
       - name: Create Issue
         uses: actions/create-issue@v1
         with:
-          title: 'Q${{ github.run_number }} Access Review'
+          title: 'Q\${{ github.run_number }} Access Review'
           body: 'Please review user access rights'`,
               preview: 'Create automated quarterly access review workflow',
             },

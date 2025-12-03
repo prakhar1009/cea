@@ -17,6 +17,10 @@ import { MetricsService } from './services/metrics.service';
 import { CacheService } from './services/cache.service';
 import { SuggestionEngineService } from './services/suggestion-engine.service';
 import { SuggestionsController } from './controllers/suggestions.controller';
+import { NlpPolicyAnalyzerService } from './services/nlp-policy-analyzer.service';
+import { VerifiableCredentialsService } from './services/verifiable-credentials.service';
+import { ZkpService } from './services/zkp.service';
+import { AttestationController } from './controllers/attestation.controller';
 
 @Module({
   imports: [],
@@ -27,6 +31,7 @@ import { SuggestionsController } from './controllers/suggestions.controller';
     RulesController,
     MetricsController,
     SuggestionsController,
+    AttestationController,
   ],
   providers: [
     RuleEngineService,
@@ -36,6 +41,9 @@ import { SuggestionsController } from './controllers/suggestions.controller';
     MetricsService,
     CacheService,
     SuggestionEngineService,
+    NlpPolicyAnalyzerService,
+    VerifiableCredentialsService,
+    ZkpService,
   ],
 })
 export class CeaModule implements OnModuleInit {
