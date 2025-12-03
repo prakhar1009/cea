@@ -15,6 +15,8 @@ import { EvaluatorService } from './services/evaluator.service';
 import { EventHandlerService } from './events/event-handler.service';
 import { MetricsService } from './services/metrics.service';
 import { CacheService } from './services/cache.service';
+import { SuggestionEngineService } from './services/suggestion-engine.service';
+import { SuggestionsController } from './controllers/suggestions.controller';
 
 @Module({
   imports: [],
@@ -24,6 +26,7 @@ import { CacheService } from './services/cache.service';
     FactsController,
     RulesController,
     MetricsController,
+    SuggestionsController,
   ],
   providers: [
     RuleEngineService,
@@ -32,6 +35,7 @@ import { CacheService } from './services/cache.service';
     EventHandlerService,
     MetricsService,
     CacheService,
+    SuggestionEngineService,
   ],
 })
 export class CeaModule implements OnModuleInit {
