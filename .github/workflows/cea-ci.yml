@@ -1,0 +1,297 @@
+name: CEA CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'agents/control-enforcement/**'
+      - 'libs/**'
+      - '.github/workflows/cea-ci.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'agents/control-enforcement/**'
+      - 'libs/**'
+
+env:
+  NODE_VERSION: '20'
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cea_test
+  ENABLE_NATS: 'false'
+
+jobs:
+  validate-rules:
+    name: Validate Control Rules
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: agents/control-enforcement/package-lock.json
+
+      - name: Install dependencies
+        working-directory: agents/control-enforcement
+        run: npm ci
+
+      - name: Validate rule files
+        working-directory: agents/control-enforcement
+        run: npm run validate:rules
+
+      - name: Check rule counts
+        working-directory: agents/control-enforcement
+        run: |
+          echo "Counting rules by framework..."
+          echo "NIST 800-53: $(grep -c 'framework: nist-800-53-r5' rules/*.yaml || echo 0)"
+          echo "SOC 2: $(grep -c 'framework: soc2' rules/*.yaml || echo 0)"
+          echo "HIPAA: $(grep -c 'framework: hipaa' rules/*.yaml || echo 0)"
+          echo "PCI-DSS: $(grep -c 'framework: pci-dss' rules/*.yaml || echo 0)"
+          echo "ISO 27001: $(grep -c 'framework: iso-27001' rules/*.yaml || echo 0)"
+
+  lint-and-typecheck:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install CEA dependencies
+        working-directory: agents/control-enforcement
+        run: npm ci
+
+      - name: Type check
+        working-directory: agents/control-enforcement
+        run: npx tsc --noEmit
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: agents/control-enforcement
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: agents/control-enforcement
+        run: npm run test -- --coverage
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: agents/control-enforcement/coverage/lcov.info
+          flags: unit-tests
+          name: cea-unit-tests
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cea_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: agents/control-enforcement
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: libs/database
+        run: |
+          npm ci
+          npx prisma generate
+
+      - name: Run database migrations
+        working-directory: libs/database
+        run: npx prisma migrate deploy
+
+      - name: Run integration tests
+        working-directory: agents/control-enforcement
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          ENABLE_NATS: ${{ env.ENABLE_NATS }}
+        run: npm run test:e2e
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [validate-rules, lint-and-typecheck, unit-tests]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: agents/control-enforcement
+        run: npm ci
+
+      - name: Build application
+        working-directory: agents/control-enforcement
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: cea-build
+          path: agents/control-enforcement/dist
+          retention-days: 7
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/cea
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: agents/control-enforcement/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [build]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'agents/control-enforcement'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [integration-tests, docker-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://cea-staging.compiledger.io
+    
+    steps:
+      - name: Deploy to staging
+        run: |
+          echo "Deploying CEA to staging environment..."
+          # Add actual deployment commands here
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [integration-tests, docker-build, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://cea.compiledger.io
+    
+    steps:
+      - name: Deploy to production
+        run: |
+          echo "Deploying CEA to production environment..."
+          # Add actual deployment commands here
+
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [validate-rules, lint-and-typecheck, unit-tests, integration-tests, build]
+    if: always()
+    
+    steps:
+      - name: Check job results
+        run: |
+          echo "Pipeline completed"
+          echo "Rules validation: ${{ needs.validate-rules.result }}"
+          echo "Lint/typecheck: ${{ needs.lint-and-typecheck.result }}"
+          echo "Unit tests: ${{ needs.unit-tests.result }}"
+          echo "Integration tests: ${{ needs.integration-tests.result }}"
+          echo "Build: ${{ needs.build.result }}"

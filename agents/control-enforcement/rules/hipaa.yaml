@@ -1,0 +1,317 @@
+# HIPAA Security Rule Control Rules
+# Week 3: Healthcare compliance controls
+# Based on 45 CFR Parts 160, 162, and 164
+
+# § 164.308(a)(1)(i) - Security Management Process
+- id: hipaa-sec-mgmt-process
+  framework: hipaa
+  title: § 164.308(a)(1)(i) - Security Management Process
+  description: |
+    Implement policies and procedures to prevent, detect, contain, and correct
+    security violations. Includes risk analysis, risk management, sanction policy,
+    and information system activity review.
+  parameters:
+    risk_assessment_required: true
+  version: "1.0.0"
+  when:
+    - fact: security.risk_assessment.last_date
+      ageLessThan: "365 days"
+    - fact: security.risk_management.plan.documented
+      equals: true
+    - fact: security.sanction_policy.exists
+      equals: true
+    - fact: security.activity_review.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - security.risk_assessment.last_date
+    - security.risk_management.plan.last_updated
+    - security.sanction_policy.last_updated
+  failMessage: |
+    Security management process inadequate. Ensure annual risk assessment,
+    documented risk management plan, sanction policy, and activity review.
+
+# § 164.308(a)(3)(i) - Workforce Security
+- id: hipaa-workforce-security
+  framework: hipaa
+  title: § 164.308(a)(3)(i) - Workforce Security
+  description: |
+    Implement policies and procedures to ensure all workforce members have
+    appropriate access to ePHI and prevent unauthorized access.
+  parameters:
+    workforce_access_control_required: true
+  version: "1.0.0"
+  when:
+    - fact: workforce.authorization.process.documented
+      equals: true
+    - fact: workforce.access_review.last_date
+      ageLessThan: "180 days"
+    - fact: workforce.termination_procedures.exists
+      equals: true
+  passIf: all
+  evidence:
+    - workforce.authorization.process.documented
+    - workforce.access_review.last_date
+    - workforce.termination_procedures.last_updated
+  failMessage: |
+    Workforce security inadequate. Require authorization process,
+    semi-annual access reviews, and termination procedures.
+
+# § 164.308(a)(4)(i) - Information Access Management
+- id: hipaa-info-access-mgmt
+  framework: hipaa
+  title: § 164.308(a)(4)(i) - Information Access Management
+  description: |
+    Implement policies and procedures for authorizing access to ePHI consistent
+    with Privacy Rule requirements.
+  parameters:
+    access_authorization_required: true
+  version: "1.0.0"
+  when:
+    - fact: ephi.access_control.implemented
+      equals: true
+    - fact: ephi.access_authorization.documented
+      equals: true
+    - fact: ephi.role_based_access.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - ephi.access_control.type
+    - ephi.access_authorization.policies
+    - ephi.role_based_access.roles_count
+  failMessage: |
+    Information access management inadequate. Implement access controls,
+    document authorization procedures, enable RBAC.
+
+# § 164.308(a)(5)(i) - Security Awareness and Training
+- id: hipaa-security-training
+  framework: hipaa
+  title: § 164.308(a)(5)(i) - Security Awareness and Training
+  description: |
+    Implement security awareness and training program for all workforce members.
+  parameters:
+    annual_training_required: true
+  version: "1.0.0"
+  when:
+    - fact: training.security_awareness.program.exists
+      equals: true
+    - fact: training.workforce.completion_rate
+      greaterThanOrEqual: 95
+    - fact: training.last_conducted
+      ageLessThan: "365 days"
+  passIf: all
+  evidence:
+    - training.security_awareness.program.last_updated
+    - training.workforce.completion_rate
+    - training.last_conducted
+  failMessage: |
+    Security training inadequate. Require program existence,
+    95% completion rate, and annual training.
+
+# § 164.308(a)(6)(i) - Security Incident Procedures
+- id: hipaa-incident-procedures
+  framework: hipaa
+  title: § 164.308(a)(6)(i) - Security Incident Procedures
+  description: |
+    Implement policies and procedures to address security incidents including
+    identification, response, mitigation, and documentation.
+  parameters:
+    incident_response_required: true
+  version: "1.0.0"
+  when:
+    - fact: incident.response_plan.documented
+      equals: true
+    - fact: incident.response_team.established
+      equals: true
+    - fact: incident.detection_mechanisms.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - incident.response_plan.last_updated
+    - incident.response_team.members_count
+    - incident.incidents_last_year
+  failMessage: |
+    Security incident procedures inadequate. Require response plan,
+    response team, and detection mechanisms.
+
+# § 164.308(a)(7)(i) - Contingency Plan
+- id: hipaa-contingency-plan
+  framework: hipaa
+  title: § 164.308(a)(7)(i) - Contingency Plan
+  description: |
+    Establish policies and procedures for responding to emergencies or
+    occurrences that damage systems containing ePHI.
+  parameters:
+    backup_plan_required: true
+  version: "1.0.0"
+  when:
+    - fact: contingency.data_backup_plan.exists
+      equals: true
+    - fact: contingency.disaster_recovery_plan.exists
+      equals: true
+    - fact: contingency.testing.last_date
+      ageLessThan: "365 days"
+  passIf: all
+  evidence:
+    - contingency.data_backup_plan.last_updated
+    - contingency.disaster_recovery_plan.last_updated
+    - contingency.testing.last_date
+  failMessage: |
+    Contingency plan inadequate. Require data backup plan,
+    disaster recovery plan, and annual testing.
+
+# § 164.308(a)(8) - Evaluation
+- id: hipaa-evaluation
+  framework: hipaa
+  title: § 164.308(a)(8) - Evaluation
+  description: |
+    Perform periodic technical and nontechnical evaluation based on implemented
+    standards and in response to environmental or operational changes.
+  parameters:
+    periodic_evaluation_required: true
+  version: "1.0.0"
+  when:
+    - fact: evaluation.security.last_date
+      ageLessThan: "365 days"
+    - fact: evaluation.technical_assessment.completed
+      equals: true
+    - fact: evaluation.findings.documented
+      equals: true
+  passIf: all
+  evidence:
+    - evaluation.security.last_date
+    - evaluation.technical_assessment.findings_count
+    - evaluation.remediation.completion_rate
+  failMessage: |
+    Security evaluation inadequate. Require annual evaluation,
+    technical assessment, and documented findings.
+
+# § 164.312(a)(1) - Access Control
+- id: hipaa-access-control
+  framework: hipaa
+  title: § 164.312(a)(1) - Access Control
+  description: |
+    Implement technical policies and procedures for systems that maintain ePHI
+    to allow access only to authorized persons or software.
+  parameters:
+    unique_user_id_required: true
+  version: "1.0.0"
+  when:
+    - fact: access.unique_user_id.enforced
+      equals: true
+    - fact: access.emergency_access.procedures.exists
+      equals: true
+    - fact: access.automatic_logoff.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - access.unique_user_id.enforced
+    - access.emergency_access.procedures
+    - access.automatic_logoff.timeout_minutes
+  failMessage: |
+    Technical access controls inadequate. Require unique user IDs,
+    emergency access procedures, and automatic logoff.
+
+# § 164.312(b) - Audit Controls
+- id: hipaa-audit-controls
+  framework: hipaa
+  title: § 164.312(b) - Audit Controls
+  description: |
+    Implement hardware, software, and/or procedural mechanisms that record and
+    examine activity in information systems containing or using ePHI.
+  parameters:
+    audit_logging_required: true
+  version: "1.0.0"
+  when:
+    - fact: audit.logging.enabled
+      equals: true
+    - fact: audit.ephi_access.logged
+      equals: true
+    - fact: audit.logs.retention_days
+      greaterThanOrEqual: 2555
+  passIf: all
+  evidence:
+    - audit.logging.enabled
+    - audit.ephi_access.logged
+    - audit.logs.retention_days
+  failMessage: |
+    Audit controls inadequate. Require logging enabled, ePHI access logging,
+    and 7-year (2555 day) retention minimum.
+
+# § 164.312(c)(1) - Integrity
+- id: hipaa-integrity
+  framework: hipaa
+  title: § 164.312(c)(1) - Integrity
+  description: |
+    Implement policies and procedures to protect ePHI from improper alteration
+    or destruction.
+  parameters:
+    integrity_protection_required: true
+  version: "1.0.0"
+  when:
+    - fact: data.integrity.mechanisms.implemented
+      equals: true
+    - fact: data.tampering_detection.enabled
+      equals: true
+    - fact: data.validation.procedures.exist
+      equals: true
+  passIf: all
+  evidence:
+    - data.integrity.mechanisms.type
+    - data.tampering_detection.enabled
+    - data.validation.procedures
+  failMessage: |
+    Data integrity controls inadequate. Require integrity mechanisms,
+    tampering detection, and validation procedures.
+
+# § 164.312(d) - Person or Entity Authentication
+- id: hipaa-authentication
+  framework: hipaa
+  title: § 164.312(d) - Person or Entity Authentication
+  description: |
+    Implement procedures to verify that a person or entity seeking access to
+    ePHI is the one claimed.
+  parameters:
+    authentication_required: true
+  version: "1.0.0"
+  when:
+    - fact: authentication.methods.strong
+      equals: true
+    - fact: authentication.mfa.enabled
+      equals: true
+    - fact: authentication.failed_attempts.lockout
+      equals: true
+  passIf: all
+  evidence:
+    - authentication.methods.type
+    - authentication.mfa.coverage_percent
+    - authentication.failed_attempts.lockout_threshold
+  failMessage: |
+    Authentication inadequate. Require strong authentication methods,
+    MFA enabled, and failed attempt lockout.
+
+# § 164.312(e)(1) - Transmission Security
+- id: hipaa-transmission-security
+  framework: hipaa
+  title: § 164.312(e)(1) - Transmission Security
+  description: |
+    Implement technical security measures to guard against unauthorized access
+    to ePHI that is being transmitted over an electronic communications network.
+  parameters:
+    encryption_required: true
+  version: "1.0.0"
+  when:
+    - fact: transmission.encryption.enabled
+      equals: true
+    - fact: transmission.tls_version
+      greaterThanOrEqual: "1.2"
+    - fact: transmission.integrity_controls.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - transmission.encryption.protocol
+    - transmission.tls_version
+    - transmission.integrity_controls.type
+  failMessage: |
+    Transmission security inadequate. Require encryption enabled,
+    TLS 1.2+, and integrity controls.

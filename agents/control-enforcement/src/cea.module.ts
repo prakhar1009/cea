@@ -1,14 +1,20 @@
 // Compiledger CEA - Root Module
 // Week 1: Phase 1 Sprint 1-2
+// Week 2: Added NATS Event Handlers
+// Week 4: Added Metrics and Observability
 
 import { Module, OnModuleInit, Logger } from '@nestjs/common';
 import { HealthController } from './controllers/health.controller';
 import { ControlsController } from './controllers/controls.controller';
 import { FactsController } from './controllers/facts.controller';
 import { RulesController } from './controllers/rules.controller';
+import { MetricsController } from './controllers/metrics.controller';
 import { RuleEngineService } from './services/rule-engine.service';
 import { FactStoreService } from './services/fact-store.service';
 import { EvaluatorService } from './services/evaluator.service';
+import { EventHandlerService } from './events/event-handler.service';
+import { MetricsService } from './services/metrics.service';
+import { CacheService } from './services/cache.service';
 
 @Module({
   imports: [],
@@ -17,11 +23,15 @@ import { EvaluatorService } from './services/evaluator.service';
     ControlsController,
     FactsController,
     RulesController,
+    MetricsController,
   ],
   providers: [
     RuleEngineService,
     FactStoreService,
     EvaluatorService,
+    EventHandlerService,
+    MetricsService,
+    CacheService,
   ],
 })
 export class CeaModule implements OnModuleInit {

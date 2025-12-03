@@ -1,8 +1,10 @@
 // Compiledger CEA - Main Entry Point
 // Week 1: Phase 1 Sprint 1 - Bootstrap
+// Week 4: Added OpenAPI documentation
 
 import { NestFactory } from '@nestjs/core';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { CeaModule } from './cea.module';
 
 async function bootstrap() {
@@ -11,6 +13,22 @@ async function bootstrap() {
 
   // Set global prefix
   app.setGlobalPrefix('api/v1/cea');
+
+  // Setup OpenAPI/Swagger documentation
+  const config = new DocumentBuilder()
+    .setTitle('Control Enforcement Agent API')
+    .setDescription('Automated compliance evaluation engine for Compiledger platform')
+    .setVersion('1.0.0')
+    .addTag('health', 'Health check endpoints')
+    .addTag('rules', 'Compliance rule management')
+    .addTag('facts', 'Fact storage and retrieval')
+    .addTag('controls', 'Control evaluation')
+    .addTag('metrics', 'Prometheus metrics')
+    .addBearerAuth()
+    .build();
+  
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
   // Connect NATS microservice (optional - will add in Week 2)
   const enableNats = process.env.ENABLE_NATS !== 'false';

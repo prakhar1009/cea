@@ -1,0 +1,138 @@
+# CEA Alert Rules
+# Week 4: Prometheus alerting configuration
+
+groups:
+  - name: cea_alerts
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: CEAHighErrorRate
+        expr: rate(cea_errors_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: cea
+        annotations:
+          summary: "CEA high error rate detected"
+          description: "CEA error rate is {{ $value }} errors/sec (threshold: 1/sec)"
+
+      # Critical error rate
+      - alert: CEACriticalErrorRate
+        expr: rate(cea_errors_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+          service: cea
+        annotations:
+          summary: "CEA critical error rate"
+          description: "CEA error rate is {{ $value }} errors/sec (threshold: 5/sec)"
+
+      # Slow API responses
+      - alert: CEASlowAPIResponses
+        expr: histogram_quantile(0.95, rate(cea_api_response_time_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: cea
+        annotations:
+          summary: "CEA API responses are slow"
+          description: "95th percentile response time is {{ $value }}s (threshold: 2s)"
+
+      # Slow evaluations
+      - alert: CEASlowEvaluations
+        expr: histogram_quantile(0.95, rate(cea_evaluation_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: cea
+        annotations:
+          summary: "CEA control evaluations are slow"
+          description: "95th percentile evaluation time is {{ $value }}s (threshold: 1s)"
+
+      # Low cache hit rate
+      - alert: CEALowCacheHitRate
+        expr: avg(cea_cache_hit_rate) < 50
+        for: 10m
+        labels:
+          severity: warning
+          service: cea
+        annotations:
+          summary: "CEA cache hit rate is low"
+          description: "Cache hit rate is {{ $value }}% (threshold: 50%)"
+
+      # High memory usage
+      - alert: CEAHighMemoryUsage
+        expr: (process_resident_memory_bytes / (1024 * 1024 * 1024)) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: cea
+        annotations:
+          summary: "CEA memory usage is high"
+          description: "Memory usage is {{ $value }}GB (threshold: 2GB)"
+
+      # Critical memory usage
+      - alert: CEACriticalMemoryUsage
+        expr: (process_resident_memory_bytes / (1024 * 1024 * 1024)) > 4
+        for: 2m
+        labels:
+          severity: critical
+          service: cea
+        annotations:
+          summary: "CEA memory usage is critical"
+          description: "Memory usage is {{ $value }}GB (threshold: 4GB)"
+
+      # High CPU usage
+      - alert: CEAHighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: cea
+        annotations:
+          summary: "CEA CPU usage is high"
+          description: "CPU usage is {{ $value }}% (threshold: 80%)"
+
+      # Service down
+      - alert: CEAServiceDown
+        expr: up{job="cea"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cea
+        annotations:
+          summary: "CEA service is down"
+          description: "CEA service has been down for more than 1 minute"
+
+      # Low evaluation throughput
+      - alert: CEALowEvaluationThroughput
+        expr: rate(cea_control_evaluations_total[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: info
+          service: cea
+        annotations:
+          summary: "CEA evaluation throughput is low"
+          description: "Evaluation rate is {{ $value }}/sec (threshold: 0.1/sec)"
+
+      # Database query slow
+      - alert: CEASlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(cea_db_query_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: cea
+        annotations:
+          summary: "CEA database queries are slow"
+          description: "95th percentile query time is {{ $value }}s (threshold: 0.5s)"
+
+      # No rules loaded
+      - alert: CEANoRulesLoaded
+        expr: sum(cea_active_rules) == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: cea
+        annotations:
+          summary: "CEA has no active rules"
+          description: "CEA service is running but no compliance rules are loaded"

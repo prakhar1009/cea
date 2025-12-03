@@ -10,7 +10,10 @@
     "clean": "rm -rf dist",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage",
+    "test:e2e": "jest --config jest.e2e.config.js --runInBand",
+    "validate:rules": "ts-node scripts/validate-rules.ts",
+    "precommit": "npm run validate:rules"
   },
   "dependencies": {
     "@compiledger/common": "*",
@@ -19,9 +22,11 @@
     "@nestjs/core": "^10.2.10",
     "@nestjs/platform-express": "^10.2.10",
     "@nestjs/microservices": "^10.2.10",
+    "@nestjs/swagger": "^7.1.16",
     "nats": "^2.18.0",
     "ioredis": "^5.3.2",
     "yaml": "^2.3.4",
+    "prom-client": "^15.1.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1"
   },
@@ -32,6 +37,8 @@
     "@types/jest": "^29.5.11",
     "ts-jest": "^29.1.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.3.2"
+    "typescript": "^5.3.2",
+    "supertest": "^6.3.3",
+    "@types/supertest": "^2.0.16"
   }
 }

@@ -1,0 +1,333 @@
+# ISO/IEC 27001:2022 Annex A Control Rules
+# Week 3: International information security management standard
+
+# A.5.1 - Policies for Information Security
+- id: iso-27001-a-5-1
+  framework: iso-27001
+  title: A.5.1 - Policies for Information Security
+  description: |
+    Information security policy and topic-specific policies shall be defined,
+    approved by management, published, communicated to and acknowledged by
+    relevant personnel and interested parties.
+  parameters:
+    policy_required: true
+  version: "1.0.0"
+  when:
+    - fact: policy.information_security.exists
+      equals: true
+    - fact: policy.information_security.management_approved
+      equals: true
+    - fact: policy.information_security.last_reviewed
+      ageLessThan: "365 days"
+    - fact: policy.communication.staff_acknowledged
+      equals: true
+  passIf: all
+  evidence:
+    - policy.information_security.last_updated
+    - policy.information_security.approval_date
+    - policy.communication.acknowledgment_rate
+  failMessage: |
+    Information security policies inadequate. Require documented policy,
+    management approval, annual review, and staff acknowledgment.
+
+# A.5.10 - Acceptable Use of Information and Assets
+- id: iso-27001-a-5-10
+  framework: iso-27001
+  title: A.5.10 - Acceptable Use of Information and Assets
+  description: |
+    Rules for the acceptable use and procedures for handling information and
+    other associated assets shall be identified, documented and implemented.
+  parameters:
+    acceptable_use_policy_required: true
+  version: "1.0.0"
+  when:
+    - fact: policy.acceptable_use.documented
+      equals: true
+    - fact: policy.acceptable_use.user_training
+      equals: true
+    - fact: policy.acceptable_use.violations.tracked
+      equals: true
+  passIf: all
+  evidence:
+    - policy.acceptable_use.last_updated
+    - policy.acceptable_use.training_completion_rate
+    - policy.acceptable_use.violations_last_year
+  failMessage: |
+    Acceptable use policy inadequate. Require documented policy,
+    user training, and violation tracking.
+
+# A.5.15 - Access Control
+- id: iso-27001-a-5-15
+  framework: iso-27001
+  title: A.5.15 - Access Control
+  description: |
+    Rules to control physical and logical access to information and other
+    associated assets shall be established and implemented based on business
+    and information security requirements.
+  parameters:
+    access_control_required: true
+  version: "1.0.0"
+  when:
+    - fact: access_control.rules.documented
+      equals: true
+    - fact: access_control.physical.implemented
+      equals: true
+    - fact: access_control.logical.implemented
+      equals: true
+    - fact: access_control.reviews.periodic
+      equals: true
+  passIf: all
+  evidence:
+    - access_control.rules.last_updated
+    - access_control.physical.type
+    - access_control.logical.type
+    - access_control.reviews.last_date
+  failMessage: |
+    Access control inadequate. Require documented rules, physical controls,
+    logical controls, and periodic reviews.
+
+# A.5.17 - Authentication Information
+- id: iso-27001-a-5-17
+  framework: iso-27001
+  title: A.5.17 - Authentication Information
+  description: |
+    Allocation and management of authentication information shall be controlled
+    by a management process, including advising personnel on appropriate handling
+    of authentication information.
+  parameters:
+    authentication_management_required: true
+  version: "1.0.0"
+  when:
+    - fact: authentication.management_process.exists
+      equals: true
+    - fact: authentication.password_policy.enforced
+      equals: true
+    - fact: authentication.mfa.enabled
+      equals: true
+    - fact: authentication.credential_guidance.provided
+      equals: true
+  passIf: all
+  evidence:
+    - authentication.management_process.documented
+    - authentication.password_policy.requirements
+    - authentication.mfa.coverage_percent
+  failMessage: |
+    Authentication management inadequate. Require management process,
+    password policy, MFA, and user guidance.
+
+# A.8.2 - Privileged Access Rights
+- id: iso-27001-a-8-2
+  framework: iso-27001
+  title: A.8.2 - Privileged Access Rights
+  description: |
+    The allocation and use of privileged access rights shall be restricted
+    and managed.
+  parameters:
+    privileged_access_management_required: true
+  version: "1.0.0"
+  when:
+    - fact: privileged_access.allocation.controlled
+      equals: true
+    - fact: privileged_access.reviews.regular
+      equals: true
+    - fact: privileged_access.logging.enabled
+      equals: true
+    - fact: privileged_access.least_privilege.enforced
+      equals: true
+  passIf: all
+  evidence:
+    - privileged_access.users_count
+    - privileged_access.reviews.frequency_days
+    - privileged_access.logging.events_last_30_days
+  failMessage: |
+    Privileged access management inadequate. Require controlled allocation,
+    regular reviews, logging, and least privilege.
+
+# A.8.5 - Secure Authentication
+- id: iso-27001-a-8-5
+  framework: iso-27001
+  title: A.8.5 - Secure Authentication
+  description: |
+    Secure authentication technologies and procedures shall be implemented
+    based on information access restrictions and the topic-specific policy
+    on access control.
+  parameters:
+    secure_authentication_required: true
+  version: "1.0.0"
+  when:
+    - fact: authentication.methods.secure
+      equals: true
+    - fact: authentication.multi_factor.implemented
+      equals: true
+    - fact: authentication.session_management.secure
+      equals: true
+  passIf: all
+  evidence:
+    - authentication.methods.type
+    - authentication.multi_factor.coverage
+    - authentication.session_management.timeout
+  failMessage: |
+    Secure authentication inadequate. Require secure methods,
+    multi-factor authentication, and secure session management.
+
+# A.8.10 - Information Deletion
+- id: iso-27001-a-8-10
+  framework: iso-27001
+  title: A.8.10 - Information Deletion
+  description: |
+    Information stored in information systems, devices or in any other storage
+    media shall be deleted when no longer required.
+  parameters:
+    data_deletion_required: true
+  version: "1.0.0"
+  when:
+    - fact: data.deletion_policy.exists
+      equals: true
+    - fact: data.retention_periods.defined
+      equals: true
+    - fact: data.secure_deletion.methods.implemented
+      equals: true
+  passIf: all
+  evidence:
+    - data.deletion_policy.last_updated
+    - data.retention_periods.documented
+    - data.secure_deletion.methods.type
+  failMessage: |
+    Information deletion inadequate. Require deletion policy,
+    defined retention periods, and secure deletion methods.
+
+# A.8.11 - Data Masking
+- id: iso-27001-a-8-11
+  framework: iso-27001
+  title: A.8.11 - Data Masking
+  description: |
+    Data masking shall be used in accordance with the organization's topic-specific
+    policy on access control and other related topic-specific policies.
+  parameters:
+    data_masking_required: true
+  version: "1.0.0"
+  when:
+    - fact: data.masking.implemented
+      equals: true
+    - fact: data.masking.policy.exists
+      equals: true
+    - fact: data.masking.sensitive_data.covered
+      equals: true
+  passIf: all
+  evidence:
+    - data.masking.method
+    - data.masking.policy.last_updated
+    - data.masking.coverage_percent
+  failMessage: |
+    Data masking inadequate. Require implementation, policy,
+    and coverage of sensitive data.
+
+# A.8.23 - Web Filtering
+- id: iso-27001-a-8-23
+  framework: iso-27001
+  title: A.8.23 - Web Filtering
+  description: |
+    Access to external websites shall be managed to reduce exposure to
+    potentially malicious content.
+  parameters:
+    web_filtering_required: true
+  version: "1.0.0"
+  when:
+    - fact: web_filtering.enabled
+      equals: true
+    - fact: web_filtering.categories.blocked
+      greaterThanOrEqual: 1
+    - fact: web_filtering.malware_protection.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - web_filtering.solution
+    - web_filtering.categories.list
+    - web_filtering.blocked_attempts_last_30_days
+  failMessage: |
+    Web filtering inadequate. Require filtering enabled,
+    blocked categories, and malware protection.
+
+# A.8.24 - Use of Cryptography
+- id: iso-27001-a-8-24
+  framework: iso-27001
+  title: A.8.24 - Use of Cryptography
+  description: |
+    Rules for the effective use of cryptography, including cryptographic key
+    management, shall be defined and implemented.
+  parameters:
+    cryptography_policy_required: true
+  version: "1.0.0"
+  when:
+    - fact: cryptography.policy.exists
+      equals: true
+    - fact: cryptography.key_management.implemented
+      equals: true
+    - fact: cryptography.algorithms.approved
+      equals: true
+    - fact: cryptography.data_at_rest.encrypted
+      equals: true
+  passIf: all
+  evidence:
+    - cryptography.policy.last_updated
+    - cryptography.key_management.system
+    - cryptography.algorithms.list
+  failMessage: |
+    Cryptography inadequate. Require policy, key management,
+    approved algorithms, and data-at-rest encryption.
+
+# A.8.28 - Secure Coding
+- id: iso-27001-a-8-28
+  framework: iso-27001
+  title: A.8.28 - Secure Coding
+  description: |
+    Secure coding principles shall be applied to software development.
+  parameters:
+    secure_coding_required: true
+  version: "1.0.0"
+  when:
+    - fact: development.secure_coding_standards.exists
+      equals: true
+    - fact: development.code_review.required
+      equals: true
+    - fact: development.security_testing.integrated
+      equals: true
+    - fact: development.vulnerability_scanning.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - development.secure_coding_standards.name
+    - development.code_review.coverage_percent
+    - development.security_testing.tools
+  failMessage: |
+    Secure coding inadequate. Require coding standards, code review,
+    security testing, and vulnerability scanning.
+
+# A.5.23 - Information Security for Cloud Services
+- id: iso-27001-a-5-23
+  framework: iso-27001
+  title: A.5.23 - Information Security for Cloud Services
+  description: |
+    Processes for acquisition, use, management and exit from cloud services
+    shall be established in accordance with the organization's information
+    security requirements.
+  parameters:
+    cloud_security_required: true
+  version: "1.0.0"
+  when:
+    - fact: cloud.security_policy.exists
+      equals: true
+    - fact: cloud.vendor_assessment.conducted
+      equals: true
+    - fact: cloud.data_classification.implemented
+      equals: true
+    - fact: cloud.exit_strategy.documented
+      equals: true
+  passIf: all
+  evidence:
+    - cloud.security_policy.last_updated
+    - cloud.vendor_assessment.last_date
+    - cloud.data_classification.levels
+  failMessage: |
+    Cloud security inadequate. Require security policy, vendor assessment,
+    data classification, and exit strategy.

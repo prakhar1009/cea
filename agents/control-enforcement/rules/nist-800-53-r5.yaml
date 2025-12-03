@@ -1,5 +1,6 @@
 # NIST 800-53 Rev 5 Control Rules
 # Week 1: Phase 1 - First 5 Controls
+# Week 2: Added 15 more controls (Total: 20)
 
 # AC-2: Account Management
 - id: nist-800-53-r5-ac-2
@@ -168,3 +169,508 @@
       - type: security_policy
         contains: ["firewall", "boundary", "monitoring"]
     alignmentThreshold: 0.85
+
+# ============================================================================
+# Week 2: Additional NIST 800-53 Rev 5 Controls (15 controls)
+# ============================================================================
+
+# AC-4: Information Flow Enforcement
+- id: nist-800-53-r5-ac-4
+  framework: nist-800-53-r5
+  title: AC-4 - Information Flow Enforcement
+  description: |
+    The system enforces approved authorizations for controlling the flow of
+    information within the system and between interconnected systems based on
+    information flow control policies.
+  parameters:
+    flow_control_enabled: true
+  version: "1.0.0"
+  when:
+    - fact: network.flow_control.enabled
+      equals: true
+    - fact: network.segmentation.implemented
+      equals: true
+    - fact: network.unauthorized_flows.count
+      lessThanOrEqual: 0
+  passIf: all
+  evidence:
+    - network.flow_control.enabled
+    - network.segmentation.implemented
+    - network.flow_policies.count
+    - network.unauthorized_flows.count
+  failMessage: |
+    Information flow enforcement is not properly configured. Ensure:
+    1. Network flow control policies are enabled
+    2. Network segmentation is implemented
+    3. No unauthorized information flows detected
+
+# AC-5: Separation of Duties
+- id: nist-800-53-r5-ac-5
+  framework: nist-800-53-r5
+  title: AC-5 - Separation of Duties
+  description: |
+    The organization separates duties of individuals to reduce the risk of
+    malevolent activity without collusion.
+  parameters:
+    segregation_enforced: true
+  version: "1.0.0"
+  when:
+    - fact: iam.separation_of_duties.enabled
+      equals: true
+    - fact: iam.conflicting_roles.count
+      equals: 0
+    - fact: iam.privileged_users.segregated
+      equals: true
+  passIf: all
+  evidence:
+    - iam.separation_of_duties.enabled
+    - iam.conflicting_roles.count
+    - iam.privileged_users.total
+    - iam.role_conflicts.detected
+  failMessage: |
+    Separation of duties is not adequately enforced. Ensure:
+    1. Conflicting roles are not assigned to the same user
+    2. Privileged functions are segregated
+    3. Duties are separated per organizational policy
+
+# AC-6: Least Privilege
+- id: nist-800-53-r5-ac-6
+  framework: nist-800-53-r5
+  title: AC-6 - Least Privilege
+  description: |
+    The organization employs the principle of least privilege, allowing only
+    authorized accesses for users (or processes acting on behalf of users)
+    that are necessary to accomplish assigned tasks.
+  parameters:
+    least_privilege_enforced: true
+  version: "1.0.0"
+  when:
+    - fact: iam.least_privilege.enabled
+      equals: true
+    - fact: iam.excessive_permissions.count
+      equals: 0
+    - fact: iam.privileged_access.reviewed
+      equals: true
+  passIf: all
+  evidence:
+    - iam.least_privilege.enabled
+    - iam.excessive_permissions.count
+    - iam.privileged_access.last_review_date
+    - iam.permission_reviews.annual_count
+  failMessage: |
+    Least privilege principle is not fully enforced. Ensure:
+    1. Users have only necessary permissions
+    2. No excessive permissions detected
+    3. Privileged access is regularly reviewed
+  manualIf:
+    - fact: iam.permission_exceptions.count
+      greaterThan: 0
+
+# AU-2: Audit Events
+- id: nist-800-53-r5-au-2
+  framework: nist-800-53-r5
+  title: AU-2 - Audit Events
+  description: |
+    The organization determines that the system is capable of auditing specified
+    events and coordinates the security audit function with other organizational
+    entities requiring audit-related information.
+  parameters:
+    required_event_types: ["authentication", "authorization", "configuration_change", "data_access"]
+  version: "1.0.0"
+  when:
+    - fact: audit.events.authentication.enabled
+      equals: true
+    - fact: audit.events.authorization.enabled
+      equals: true
+    - fact: audit.events.configuration_change.enabled
+      equals: true
+    - fact: audit.events.data_access.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - audit.events.enabled_types
+    - audit.events.total_count_last_24h
+    - audit.configuration.last_updated
+  failMessage: |
+    Required audit events are not fully configured. Ensure:
+    1. Authentication events are audited
+    2. Authorization events are audited
+    3. Configuration changes are audited
+    4. Data access events are audited
+
+# AU-3: Content of Audit Records
+- id: nist-800-53-r5-au-3
+  framework: nist-800-53-r5
+  title: AU-3 - Content of Audit Records
+  description: |
+    The system generates audit records containing information that establishes
+    what type of event occurred, when the event occurred, where the event occurred,
+    the source of the event, the outcome of the event, and the identity of any
+    individuals or subjects associated with the event.
+  parameters:
+    required_fields: ["timestamp", "event_type", "source", "outcome", "user_identity"]
+  version: "1.0.0"
+  when:
+    - fact: audit.records.timestamp.included
+      equals: true
+    - fact: audit.records.event_type.included
+      equals: true
+    - fact: audit.records.source.included
+      equals: true
+    - fact: audit.records.outcome.included
+      equals: true
+    - fact: audit.records.user_identity.included
+      equals: true
+  passIf: all
+  evidence:
+    - audit.records.fields
+    - audit.records.sample_count
+    - audit.records.validation_status
+  failMessage: |
+    Audit record content is incomplete. Ensure all required fields are captured:
+    1. Event timestamp
+    2. Event type
+    3. Event source
+    4. Event outcome
+    5. User identity
+
+# AU-6: Audit Review, Analysis, and Reporting
+- id: nist-800-53-r5-au-6
+  framework: nist-800-53-r5
+  title: AU-6 - Audit Review, Analysis, and Reporting
+  description: |
+    The organization reviews and analyzes system audit records regularly for
+    indications of inappropriate or unusual activity and reports findings to
+    designated organizational officials.
+  parameters:
+    review_frequency_days: 7
+  version: "1.0.0"
+  when:
+    - fact: audit.review.enabled
+      equals: true
+    - fact: audit.review.last_date
+      ageLessThan: "7 days"
+    - fact: audit.analysis.automated
+      equals: true
+  passIf: all
+  evidence:
+    - audit.review.last_date
+    - audit.review.frequency_days
+    - audit.analysis.findings_count
+    - audit.reports.generated_last_30_days
+  failMessage: |
+    Audit review and analysis requirements not met. Ensure:
+    1. Audit logs are reviewed at least weekly
+    2. Automated analysis is enabled
+    3. Findings are reported to designated officials
+  manualIf:
+    - fact: audit.review.manual_required
+      equals: true
+
+# AU-12: Audit Generation
+- id: nist-800-53-r5-au-12
+  framework: nist-800-53-r5
+  title: AU-12 - Audit Generation
+  description: |
+    The system provides audit record generation capability for the auditable
+    events defined in AU-2 at all system components and allows designated
+    organizational personnel to select which auditable events are to be audited.
+  parameters:
+    generation_enabled: true
+  version: "1.0.0"
+  when:
+    - fact: audit.generation.enabled
+      equals: true
+    - fact: audit.generation.coverage_percent
+      greaterThan: 95
+    - fact: audit.generation.failures.count
+      lessThanOrEqual: 0
+  passIf: all
+  evidence:
+    - audit.generation.enabled
+    - audit.generation.components_count
+    - audit.generation.coverage_percent
+    - audit.generation.failures.count
+  failMessage: |
+    Audit generation is not properly configured. Ensure:
+    1. Audit generation is enabled across all components
+    2. Coverage is at least 95%
+    3. No audit generation failures
+
+# CA-7: Continuous Monitoring
+- id: nist-800-53-r5-ca-7
+  framework: nist-800-53-r5
+  title: CA-7 - Continuous Monitoring
+  description: |
+    The organization develops a continuous monitoring strategy and implements
+    continuous monitoring in accordance with the organizational continuous
+    monitoring strategy.
+  parameters:
+    monitoring_enabled: true
+  version: "1.0.0"
+  when:
+    - fact: monitoring.continuous.enabled
+      equals: true
+    - fact: monitoring.strategy.documented
+      equals: true
+    - fact: monitoring.alerts.last_24h
+      greaterThan: 0
+    - fact: monitoring.coverage.percent
+      greaterThan: 90
+  passIf: all
+  evidence:
+    - monitoring.continuous.enabled
+    - monitoring.strategy.last_updated
+    - monitoring.metrics.collected
+    - monitoring.alerts.last_24h
+    - monitoring.coverage.percent
+  failMessage: |
+    Continuous monitoring is not fully implemented. Ensure:
+    1. Continuous monitoring is enabled
+    2. Monitoring strategy is documented
+    3. System coverage is at least 90%
+    4. Alerts are being generated
+
+# CM-2: Baseline Configuration
+- id: nist-800-53-r5-cm-2
+  framework: nist-800-53-r5
+  title: CM-2 - Baseline Configuration
+  description: |
+    The organization develops, documents, and maintains a current baseline
+    configuration of the system and reviews and updates the baseline
+    configuration as an integral part of system component installations
+    and system upgrades.
+  parameters:
+    baseline_maintained: true
+  version: "1.0.0"
+  when:
+    - fact: config.baseline.exists
+      equals: true
+    - fact: config.baseline.current
+      equals: true
+    - fact: config.baseline.last_review_date
+      ageLessThan: "90 days"
+  passIf: all
+  evidence:
+    - config.baseline.exists
+    - config.baseline.version
+    - config.baseline.last_review_date
+    - config.baseline.components_count
+  failMessage: |
+    Baseline configuration is not properly maintained. Ensure:
+    1. Baseline configuration is documented
+    2. Baseline is current with system state
+    3. Baseline is reviewed at least quarterly
+  manualIf:
+    - fact: config.baseline.requires_approval
+      equals: true
+
+# CM-6: Configuration Settings
+- id: nist-800-53-r5-cm-6
+  framework: nist-800-53-r5
+  title: CM-6 - Configuration Settings
+  description: |
+    The organization establishes and documents configuration settings for
+    components employed within the system using security configuration checklists
+    that reflect the most restrictive mode consistent with operational requirements.
+  parameters:
+    secure_config_enforced: true
+  version: "1.0.0"
+  when:
+    - fact: config.settings.documented
+      equals: true
+    - fact: config.settings.secure_baseline.applied
+      equals: true
+    - fact: config.deviations.count
+      lessThanOrEqual: 0
+  passIf: all
+  evidence:
+    - config.settings.documented
+    - config.settings.checklist_used
+    - config.settings.applied_components
+    - config.deviations.count
+  failMessage: |
+    Configuration settings do not meet security requirements. Ensure:
+    1. Configuration settings are documented
+    2. Security configuration checklist is applied
+    3. No unauthorized configuration deviations
+  manualIf:
+    - fact: config.deviations.approved.count
+      greaterThan: 0
+
+# CM-7: Least Functionality
+- id: nist-800-53-r5-cm-7
+  framework: nist-800-53-r5
+  title: CM-7 - Least Functionality
+  description: |
+    The organization configures the system to provide only essential capabilities
+    and prohibits or restricts the use of specified functions, ports, protocols,
+    and services.
+  parameters:
+    unnecessary_services_disabled: true
+  version: "1.0.0"
+  when:
+    - fact: config.unnecessary_services.disabled
+      equals: true
+    - fact: config.unnecessary_ports.closed
+      equals: true
+    - fact: config.functions.essential_only
+      equals: true
+  passIf: all
+  evidence:
+    - config.services.running_count
+    - config.services.unnecessary_count
+    - config.ports.open_count
+    - config.ports.approved_list
+  failMessage: |
+    System is not configured with least functionality. Ensure:
+    1. Unnecessary services are disabled
+    2. Unnecessary ports are closed
+    3. Only essential functions are enabled
+
+# IA-5: Authenticator Management
+- id: nist-800-53-r5-ia-5
+  framework: nist-800-53-r5
+  title: IA-5 - Authenticator Management
+  description: |
+    The organization manages system authenticators by verifying, as part of the
+    initial authenticator distribution, the identity of the individual receiving
+    the authenticator; establishing initial authenticator content for
+    authenticators defined by the organization; and ensuring that authenticators
+    have sufficient strength of mechanism for their intended use.
+  parameters:
+    password_complexity_required: true
+    password_min_length: 12
+  version: "1.0.0"
+  when:
+    - fact: iam.authenticator.management.enabled
+      equals: true
+    - fact: iam.password.complexity.enforced
+      equals: true
+    - fact: iam.password.min_length
+      greaterThanOrEqual: 12
+    - fact: iam.password.expiration.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - iam.authenticator.management.enabled
+    - iam.password.complexity.rules
+    - iam.password.min_length
+    - iam.password.expiration.days
+    - iam.weak_passwords.count
+  failMessage: |
+    Authenticator management does not meet requirements. Ensure:
+    1. Password complexity is enforced
+    2. Minimum password length is at least 12 characters
+    3. Password expiration is enabled
+    4. Authenticator strength is sufficient
+
+# SC-8: Transmission Confidentiality and Integrity
+- id: nist-800-53-r5-sc-8
+  framework: nist-800-53-r5
+  title: SC-8 - Transmission Confidentiality and Integrity
+  description: |
+    The system protects the confidentiality and integrity of transmitted
+    information by implementing cryptographic mechanisms.
+  parameters:
+    encryption_required: true
+  version: "1.0.0"
+  when:
+    - fact: network.encryption.in_transit.enabled
+      equals: true
+    - fact: network.tls.enforced
+      equals: true
+    - fact: network.tls.min_version
+      matches: "^1\\.[23]$"
+    - fact: network.unencrypted_traffic.percent
+      lessThanOrEqual: 5
+  passIf: all
+  evidence:
+    - network.encryption.in_transit.enabled
+    - network.tls.enforced
+    - network.tls.min_version
+    - network.unencrypted_traffic.percent
+    - network.cipher_suites.approved
+  failMessage: |
+    Transmission confidentiality and integrity not adequately protected. Ensure:
+    1. Encryption in transit is enabled
+    2. TLS 1.2 or higher is enforced
+    3. Unencrypted traffic is minimal (< 5%)
+    4. Strong cipher suites are used
+
+# SI-2: Flaw Remediation
+- id: nist-800-53-r5-si-2
+  framework: nist-800-53-r5
+  title: SI-2 - Flaw Remediation
+  description: |
+    The organization identifies, reports, and corrects system flaws; tests
+    software and firmware updates related to flaw remediation for effectiveness
+    and potential side effects before installation; and installs security-relevant
+    software and firmware updates within the time period specified in organizational
+    policy.
+  parameters:
+    critical_patch_timeframe_days: 30
+    high_patch_timeframe_days: 90
+  version: "1.0.0"
+  when:
+    - fact: vulnerability.management.enabled
+      equals: true
+    - fact: vulnerability.critical.unpatched.count
+      equals: 0
+    - fact: vulnerability.high.overdue.count
+      lessThanOrEqual: 0
+    - fact: vulnerability.scanning.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - vulnerability.management.enabled
+    - vulnerability.critical.unpatched.count
+    - vulnerability.high.unpatched.count
+    - vulnerability.medium.unpatched.count
+    - vulnerability.last_scan_date
+    - vulnerability.patch.compliance_percent
+  failMessage: |
+    Flaw remediation process is inadequate. Ensure:
+    1. Vulnerability management is enabled
+    2. No critical vulnerabilities are unpatched
+    3. High vulnerabilities are patched within 90 days
+    4. Regular vulnerability scanning is performed
+  manualIf:
+    - fact: vulnerability.exceptions.count
+      greaterThan: 0
+
+# SI-4: Information System Monitoring
+- id: nist-800-53-r5-si-4
+  framework: nist-800-53-r5
+  title: SI-4 - Information System Monitoring
+  description: |
+    The organization monitors the system to detect attacks and indicators of
+    potential attacks; unauthorized local, network, and remote connections;
+    and unauthorized access, use, disclosure, disruption, modification, or
+    destruction of information.
+  parameters:
+    monitoring_enabled: true
+  version: "1.0.0"
+  when:
+    - fact: monitoring.ids.enabled
+      equals: true
+    - fact: monitoring.ips.enabled
+      equals: true
+    - fact: monitoring.siem.enabled
+      equals: true
+    - fact: monitoring.alerts.response_time_minutes
+      lessThanOrEqual: 30
+  passIf: all
+  evidence:
+    - monitoring.ids.enabled
+    - monitoring.ips.enabled
+    - monitoring.siem.enabled
+    - monitoring.alerts.last_24h
+    - monitoring.incidents.detected_last_30_days
+    - monitoring.coverage.systems_percent
+  failMessage: |
+    System monitoring is not comprehensive. Ensure:
+    1. IDS/IPS is enabled and operational
+    2. SIEM is collecting and analyzing logs
+    3. Alert response time is within acceptable limits
+    4. Monitoring covers all critical systems

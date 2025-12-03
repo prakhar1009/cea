@@ -1,0 +1,350 @@
+# SOC 2 Trust Services Criteria Control Rules
+# Week 2: Phase 1 - Common Criteria Controls
+
+# CC6.1: Logical and Physical Access Controls
+- id: soc2-cc6-1
+  framework: soc2
+  title: CC6.1 - Logical and Physical Access Controls
+  description: |
+    The entity implements logical and physical access controls to protect information
+    assets. This includes restricting access to authorized users and preventing
+    unauthorized access to data and systems.
+  parameters:
+    access_control_required: true
+  version: "1.0.0"
+  when:
+    - fact: iam.access_control.implemented
+      equals: true
+    - fact: iam.authorization.centralized
+      equals: true
+    - fact: iam.access_reviews.last_date
+      ageLessThan: "90 days"
+    - fact: physical.access_control.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - iam.access_control.implemented
+    - iam.authorization.centralized
+    - iam.access_reviews.last_date
+    - physical.access_control.enabled
+    - physical.access_logs.available
+  failMessage: |
+    Logical and physical access controls are inadequate. Ensure:
+    1. Access control mechanisms are implemented
+    2. Authorization is centralized
+    3. Access reviews are performed quarterly
+    4. Physical access controls are in place
+
+# CC6.2: Prior to Granting Access
+- id: soc2-cc6-2
+  framework: soc2
+  title: CC6.2 - Prior to Granting Access
+  description: |
+    Prior to granting access, the entity registers and authorizes new internal
+    and external users whose access is administered by the entity. This includes
+    authorization by appropriate personnel and verification of identity.
+  parameters:
+    registration_required: true
+  version: "1.0.0"
+  when:
+    - fact: iam.registration.process.documented
+      equals: true
+    - fact: iam.authorization.required_before_access
+      equals: true
+    - fact: iam.identity_verification.enabled
+      equals: true
+    - fact: iam.unauthorized_access.attempts_last_30_days
+      lessThanOrEqual: 0
+  passIf: all
+  evidence:
+    - iam.registration.process.documented
+    - iam.authorization.approval_workflow
+    - iam.identity_verification.method
+    - iam.new_users.last_30_days
+  failMessage: |
+    User registration and authorization process is inadequate. Ensure:
+    1. Registration process is documented
+    2. Authorization is required before access is granted
+    3. Identity verification is performed
+    4. No unauthorized access attempts
+
+# CC6.3: Removal of Access
+- id: soc2-cc6-3
+  framework: soc2
+  title: CC6.3 - Removal of Access
+  description: |
+    The entity removes access to systems, applications, and data when an employee's
+    or contractor's employment or engagement is terminated or when access is no
+    longer required.
+  parameters:
+    timely_removal_required: true
+  version: "1.0.0"
+  when:
+    - fact: iam.access_removal.process.documented
+      equals: true
+    - fact: iam.access_removal.automated
+      equals: true
+    - fact: iam.terminated_users.access_removed_within_24h
+      equals: true
+    - fact: iam.orphaned_accounts.count
+      lessThanOrEqual: 0
+  passIf: all
+  evidence:
+    - iam.access_removal.process.documented
+    - iam.access_removal.avg_removal_time_hours
+    - iam.terminated_users.last_30_days
+    - iam.orphaned_accounts.count
+  failMessage: |
+    Access removal process is inadequate. Ensure:
+    1. Access removal process is documented
+    2. Removal is automated where possible
+    3. Access is removed within 24 hours of termination
+    4. No orphaned accounts exist
+  manualIf:
+    - fact: iam.access_removal.manual_review_required
+      equals: true
+
+# CC6.4: Restriction of Access
+- id: soc2-cc6-4
+  framework: soc2
+  title: CC6.4 - Restriction of Access
+  description: |
+    The entity restricts access to information assets based on the user's need
+    and responsibility and implements the principle of least privilege.
+  parameters:
+    least_privilege_required: true
+  version: "1.0.0"
+  when:
+    - fact: iam.least_privilege.enforced
+      equals: true
+    - fact: iam.role_based_access.implemented
+      equals: true
+    - fact: iam.excessive_permissions.count
+      lessThanOrEqual: 0
+    - fact: iam.privileged_access.monitored
+      equals: true
+  passIf: all
+  evidence:
+    - iam.least_privilege.enforced
+    - iam.role_based_access.roles_count
+    - iam.excessive_permissions.count
+    - iam.privileged_access.users_count
+  failMessage: |
+    Access restriction and least privilege not adequately enforced. Ensure:
+    1. Least privilege principle is enforced
+    2. Role-based access control is implemented
+    3. No excessive permissions detected
+    4. Privileged access is monitored
+
+# CC6.5: Discontinue Use of Systems
+- id: soc2-cc6-5
+  framework: soc2
+  title: CC6.5 - Discontinue Use of Systems
+  description: |
+    The entity discontinues logical and physical protections over physical assets
+    only after the ability to read or recover data and software from those assets
+    has been diminished and is no longer required.
+  parameters:
+    data_sanitization_required: true
+  version: "1.0.0"
+  when:
+    - fact: data.sanitization.policy.exists
+      equals: true
+    - fact: data.sanitization.verified
+      equals: true
+    - fact: asset.disposal.secure_process
+      equals: true
+    - fact: data.recovery.risk_assessed
+      equals: true
+  passIf: all
+  evidence:
+    - data.sanitization.policy.last_updated
+    - data.sanitization.method
+    - asset.disposal.records_last_year
+    - data.sanitization.verification_logs
+  failMessage: |
+    System discontinuation and data sanitization process is inadequate. Ensure:
+    1. Data sanitization policy exists and is current
+    2. Data sanitization is verified
+    3. Secure disposal process is followed
+    4. Data recovery risk is assessed
+  manualIf:
+    - fact: asset.disposal.requires_certification
+      equals: true
+
+# CC6.6: Access Authentication
+- id: soc2-cc6-6
+  framework: soc2
+  title: CC6.6 - Access Authentication
+  description: |
+    The entity implements authentication mechanisms to identify and authenticate
+    users before granting access to systems, applications, and data. This includes
+    multi-factor authentication for remote access and privileged users.
+  parameters:
+    mfa_required: true
+  version: "1.0.0"
+  when:
+    - fact: iam.authentication.strong_mechanisms
+      equals: true
+    - fact: iam.mfa.enforced_remote_access
+      equals: true
+    - fact: iam.mfa.enforced_privileged_users
+      equals: true
+    - fact: iam.password.complexity.enforced
+      equals: true
+  passIf: all
+  evidence:
+    - iam.authentication.methods
+    - iam.mfa.coverage_percent
+    - iam.mfa.remote_users_count
+    - iam.mfa.privileged_users_count
+    - iam.password.policy
+  failMessage: |
+    Authentication mechanisms are inadequate. Ensure:
+    1. Strong authentication mechanisms are in place
+    2. MFA is enforced for remote access
+    3. MFA is enforced for privileged users
+    4. Password complexity is enforced
+
+# CC6.7: Access Restriction to Data
+- id: soc2-cc6-7
+  framework: soc2
+  title: CC6.7 - Access Restriction to Data
+  description: |
+    The entity restricts the transmission, movement, and removal of information
+    to authorized internal and external users and processes, and protects it
+    during transmission, movement, or removal to meet the entity's objectives.
+  parameters:
+    data_protection_required: true
+  version: "1.0.0"
+  when:
+    - fact: data.transmission.encrypted
+      equals: true
+    - fact: data.movement.controlled
+      equals: true
+    - fact: data.dlp.enabled
+      equals: true
+    - fact: data.unauthorized_transfers.count
+      lessThanOrEqual: 0
+  passIf: all
+  evidence:
+    - data.transmission.encryption_method
+    - data.movement.policies_count
+    - data.dlp.enabled
+    - data.dlp.violations_last_30_days
+    - data.transfers.authorized_count
+  failMessage: |
+    Data transmission and movement controls are inadequate. Ensure:
+    1. Data transmission is encrypted
+    2. Data movement is controlled
+    3. Data Loss Prevention (DLP) is enabled
+    4. No unauthorized data transfers
+
+# CC6.8: Encryption Keys Management
+- id: soc2-cc6-8
+  framework: soc2
+  title: CC6.8 - Encryption Keys Management
+  description: |
+    The entity protects encryption keys during generation, storage, use,
+    and destruction to meet the entity's objectives.
+  parameters:
+    key_management_required: true
+  version: "1.0.0"
+  when:
+    - fact: crypto.key_management.system.enabled
+      equals: true
+    - fact: crypto.keys.rotation.enabled
+      equals: true
+    - fact: crypto.keys.secure_storage
+      equals: true
+    - fact: crypto.keys.access_controlled
+      equals: true
+  passIf: all
+  evidence:
+    - crypto.key_management.system.name
+    - crypto.keys.rotation.last_date
+    - crypto.keys.rotation.frequency_days
+    - crypto.keys.active_count
+    - crypto.keys.access_logs
+  failMessage: |
+    Encryption key management is inadequate. Ensure:
+    1. Key management system is in place
+    2. Key rotation is enabled and scheduled
+    3. Keys are securely stored
+    4. Key access is controlled and logged
+  manualIf:
+    - fact: crypto.keys.manual_rotation_required
+      equals: true
+
+# CC7.2: Detection of Security Events
+- id: soc2-cc7-2
+  framework: soc2
+  title: CC7.2 - Detection of Security Events
+  description: |
+    The entity monitors system components and the operating environment for
+    anomalies and indicators of potential security events, and evaluates these
+    security events to determine whether they could or have resulted in a failure
+    of the system to meet its objectives (security incidents).
+  parameters:
+    monitoring_required: true
+  version: "1.0.0"
+  when:
+    - fact: monitoring.security_events.enabled
+      equals: true
+    - fact: monitoring.siem.operational
+      equals: true
+    - fact: monitoring.ids_ips.enabled
+      equals: true
+    - fact: monitoring.anomaly_detection.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - monitoring.security_events.types
+    - monitoring.siem.events_last_24h
+    - monitoring.ids_ips.alerts_last_24h
+    - monitoring.anomaly_detection.incidents_last_30_days
+    - monitoring.false_positive_rate
+  failMessage: |
+    Security event detection is inadequate. Ensure:
+    1. Security event monitoring is enabled
+    2. SIEM is operational and collecting logs
+    3. IDS/IPS is enabled and alerting
+    4. Anomaly detection is configured
+
+# CC7.3: Response to Security Incidents
+- id: soc2-cc7-3
+  framework: soc2
+  title: CC7.3 - Response to Security Incidents
+  description: |
+    The entity responds to identified security incidents by executing a defined
+    incident response program to understand, contain, remediate, and communicate
+    security incidents, as appropriate.
+  parameters:
+    incident_response_required: true
+  version: "1.0.0"
+  when:
+    - fact: incident_response.plan.documented
+      equals: true
+    - fact: incident_response.team.established
+      equals: true
+    - fact: incident_response.avg_response_time_minutes
+      lessThanOrEqual: 60
+    - fact: incident_response.postmortem.conducted
+      equals: true
+  passIf: all
+  evidence:
+    - incident_response.plan.last_updated
+    - incident_response.team.members_count
+    - incident_response.incidents_last_year
+    - incident_response.avg_response_time_minutes
+    - incident_response.avg_resolution_time_hours
+    - incident_response.postmortems_count
+  failMessage: |
+    Incident response capability is inadequate. Ensure:
+    1. Incident response plan is documented and current
+    2. Incident response team is established
+    3. Response time is within acceptable limits
+    4. Post-incident reviews are conducted
+  manualIf:
+    - fact: incident_response.manual_escalation_required
+      equals: true

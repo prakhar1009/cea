@@ -1,0 +1,341 @@
+# PCI DSS v4.0 Control Rules
+# Week 3: Payment Card Industry Data Security Standard
+# Protecting cardholder data and payment transactions
+
+# Requirement 1: Install and Maintain Network Security Controls
+- id: pci-dss-req-1
+  framework: pci-dss
+  title: Requirement 1 - Network Security Controls
+  description: |
+    Install and maintain network security controls to protect cardholder data.
+    Network security controls include firewalls and other network security technologies.
+  parameters:
+    firewall_required: true
+  version: "1.0.0"
+  when:
+    - fact: network.firewall.installed
+      equals: true
+    - fact: network.firewall.rules.documented
+      equals: true
+    - fact: network.firewall.config_review.last_date
+      ageLessThan: "180 days"
+    - fact: network.segmentation.cardholder_data.implemented
+      equals: true
+  passIf: all
+  evidence:
+    - network.firewall.installed
+    - network.firewall.rules.documented
+    - network.firewall.config_review.last_date
+    - network.segmentation.cardholder_data.implemented
+  failMessage: |
+    Network security controls inadequate. Require firewall installation,
+    documented rules, semi-annual reviews, and cardholder data segmentation.
+
+# Requirement 2: Apply Secure Configurations
+- id: pci-dss-req-2
+  framework: pci-dss
+  title: Requirement 2 - Secure Configurations
+  description: |
+    Apply secure configurations to all system components. Default passwords and
+    other security parameters must be changed, and unnecessary services disabled.
+  parameters:
+    secure_config_required: true
+  version: "1.0.0"
+  when:
+    - fact: system.default_passwords.changed
+      equals: true
+    - fact: system.unnecessary_services.disabled
+      equals: true
+    - fact: system.hardening_standards.applied
+      equals: true
+    - fact: system.config_baseline.documented
+      equals: true
+  passIf: all
+  evidence:
+    - system.default_passwords.changed
+    - system.unnecessary_services.disabled
+    - system.hardening_standards.name
+    - system.config_baseline.last_updated
+  failMessage: |
+    Secure configurations inadequate. Require default password changes,
+    disabled unnecessary services, hardening standards, and documented baselines.
+
+# Requirement 3: Protect Stored Account Data
+- id: pci-dss-req-3
+  framework: pci-dss
+  title: Requirement 3 - Protect Stored Account Data
+  description: |
+    Protect stored account data. Cardholder data must be encrypted or
+    rendered unreadable. Minimize data retention and storage.
+  parameters:
+    encryption_required: true
+  version: "1.0.0"
+  when:
+    - fact: cardholder_data.encryption.enabled
+      equals: true
+    - fact: cardholder_data.retention_policy.exists
+      equals: true
+    - fact: cardholder_data.storage.minimized
+      equals: true
+    - fact: cardholder_data.sensitive_auth_data.not_stored
+      equals: true
+  passIf: all
+  evidence:
+    - cardholder_data.encryption.method
+    - cardholder_data.retention_policy.max_days
+    - cardholder_data.storage.locations_count
+  failMessage: |
+    Stored account data protection inadequate. Require encryption,
+    retention policy, minimized storage, and no sensitive auth data storage.
+
+# Requirement 4: Protect Cardholder Data with Strong Cryptography
+- id: pci-dss-req-4
+  framework: pci-dss
+  title: Requirement 4 - Strong Cryptography During Transmission
+  description: |
+    Protect cardholder data with strong cryptography during transmission over
+    open, public networks.
+  parameters:
+    transmission_encryption_required: true
+  version: "1.0.0"
+  when:
+    - fact: transmission.encryption.enabled
+      equals: true
+    - fact: transmission.tls_version
+      greaterThanOrEqual: "1.2"
+    - fact: transmission.weak_crypto.disabled
+      equals: true
+    - fact: transmission.certificate.valid
+      equals: true
+  passIf: all
+  evidence:
+    - transmission.encryption.protocol
+    - transmission.tls_version
+    - transmission.certificate.expiry_date
+  failMessage: |
+    Transmission cryptography inadequate. Require encryption enabled,
+    TLS 1.2+, weak crypto disabled, and valid certificates.
+
+# Requirement 5: Protect All Systems and Networks from Malicious Software
+- id: pci-dss-req-5
+  framework: pci-dss
+  title: Requirement 5 - Malware Protection
+  description: |
+    Protect all systems and networks from malicious software. Anti-malware
+    solutions must be deployed and kept current.
+  parameters:
+    antimalware_required: true
+  version: "1.0.0"
+  when:
+    - fact: malware.antivirus.installed
+      equals: true
+    - fact: malware.antivirus.definitions.age_hours
+      lessThanOrEqual: 24
+    - fact: malware.scans.enabled
+      equals: true
+    - fact: malware.antivirus.updates.automatic
+      equals: true
+  passIf: all
+  evidence:
+    - malware.antivirus.installed
+    - malware.antivirus.definitions.last_updated
+    - malware.scans.frequency
+  failMessage: |
+    Malware protection inadequate. Require antivirus installed,
+    daily definition updates, scans enabled, and automatic updates.
+
+# Requirement 6: Develop and Maintain Secure Systems and Software
+- id: pci-dss-req-6
+  framework: pci-dss
+  title: Requirement 6 - Secure Systems and Software
+  description: |
+    Develop and maintain secure systems and software. Security vulnerabilities
+    must be identified and addressed through patching and secure coding practices.
+  parameters:
+    secure_development_required: true
+  version: "1.0.0"
+  when:
+    - fact: vulnerability.scanning.enabled
+      equals: true
+    - fact: vulnerability.patching.process.exists
+      equals: true
+    - fact: development.secure_coding.standards.exists
+      equals: true
+    - fact: development.code_review.required
+      equals: true
+  passIf: all
+  evidence:
+    - vulnerability.scanning.frequency
+    - vulnerability.patching.sla_days
+    - development.secure_coding.standards.name
+  failMessage: |
+    Secure systems inadequate. Require vulnerability scanning,
+    patching process, secure coding standards, and code reviews.
+
+# Requirement 7: Restrict Access to System Components and Data
+- id: pci-dss-req-7
+  framework: pci-dss
+  title: Requirement 7 - Restrict Access by Business Need to Know
+  description: |
+    Restrict access to system components and cardholder data by business need to
+    know. Access rights must be limited based on job responsibility.
+  parameters:
+    least_privilege_required: true
+  version: "1.0.0"
+  when:
+    - fact: access.least_privilege.enforced
+      equals: true
+    - fact: access.role_based.implemented
+      equals: true
+    - fact: access.cardholder_data.restricted
+      equals: true
+    - fact: access.default_deny.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - access.least_privilege.enforced
+    - access.role_based.roles_count
+    - access.cardholder_data.authorized_users
+  failMessage: |
+    Access restrictions inadequate. Require least privilege, RBAC,
+    cardholder data restriction, and default deny.
+
+# Requirement 8: Identify Users and Authenticate Access
+- id: pci-dss-req-8
+  framework: pci-dss
+  title: Requirement 8 - Identify and Authenticate Users
+  description: |
+    Identify users and authenticate access to system components. Unique IDs,
+    strong authentication, and MFA for remote access are required.
+  parameters:
+    strong_authentication_required: true
+  version: "1.0.0"
+  when:
+    - fact: authentication.unique_ids.enforced
+      equals: true
+    - fact: authentication.mfa.remote_access
+      equals: true
+    - fact: authentication.password.complexity.enforced
+      equals: true
+    - fact: authentication.password.rotation_days
+      lessThanOrEqual: 90
+  passIf: all
+  evidence:
+    - authentication.unique_ids.enforced
+    - authentication.mfa.coverage_percent
+    - authentication.password.policy
+  failMessage: |
+    Authentication inadequate. Require unique IDs, MFA for remote access,
+    password complexity, and 90-day rotation.
+
+# Requirement 9: Restrict Physical Access to Cardholder Data
+- id: pci-dss-req-9
+  framework: pci-dss
+  title: Requirement 9 - Restrict Physical Access
+  description: |
+    Restrict physical access to cardholder data. Physical access controls must
+    be implemented to prevent unauthorized access to facilities and media.
+  parameters:
+    physical_security_required: true
+  version: "1.0.0"
+  when:
+    - fact: physical.access_control.implemented
+      equals: true
+    - fact: physical.visitor_logs.maintained
+      equals: true
+    - fact: physical.media.destruction_policy.exists
+      equals: true
+    - fact: physical.cameras.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - physical.access_control.type
+    - physical.visitor_logs.retention_days
+    - physical.media.destruction_policy.method
+  failMessage: |
+    Physical access controls inadequate. Require access controls,
+    visitor logs, media destruction policy, and cameras.
+
+# Requirement 10: Log and Monitor All Access
+- id: pci-dss-req-10
+  framework: pci-dss
+  title: Requirement 10 - Log and Monitor All Access
+  description: |
+    Log and monitor all access to system components and cardholder data.
+    Audit logs must be retained, protected, and reviewed regularly.
+  parameters:
+    comprehensive_logging_required: true
+  version: "1.0.0"
+  when:
+    - fact: logging.access.enabled
+      equals: true
+    - fact: logging.cardholder_data.tracked
+      equals: true
+    - fact: logging.retention_days
+      greaterThanOrEqual: 365
+    - fact: logging.review.daily
+      equals: true
+  passIf: all
+  evidence:
+    - logging.access.events_logged
+    - logging.retention_days
+    - logging.review.frequency
+  failMessage: |
+    Logging and monitoring inadequate. Require access logging,
+    cardholder data tracking, 365-day retention, and daily review.
+
+# Requirement 11: Test Security of Systems and Networks Regularly
+- id: pci-dss-req-11
+  framework: pci-dss
+  title: Requirement 11 - Regular Security Testing
+  description: |
+    Test security of systems and networks regularly. Vulnerability scans,
+    penetration tests, and intrusion detection must be performed.
+  parameters:
+    regular_testing_required: true
+  version: "1.0.0"
+  when:
+    - fact: security_testing.vulnerability_scans.quarterly
+      equals: true
+    - fact: security_testing.penetration_test.annual
+      equals: true
+    - fact: security_testing.ids_ips.deployed
+      equals: true
+    - fact: security_testing.file_integrity.enabled
+      equals: true
+  passIf: all
+  evidence:
+    - security_testing.vulnerability_scans.last_date
+    - security_testing.penetration_test.last_date
+    - security_testing.ids_ips.alerts_last_30_days
+  failMessage: |
+    Security testing inadequate. Require quarterly vulnerability scans,
+    annual penetration tests, IDS/IPS deployment, and file integrity monitoring.
+
+# Requirement 12: Support Information Security with Policies and Programs
+- id: pci-dss-req-12
+  framework: pci-dss
+  title: Requirement 12 - Information Security Policies
+  description: |
+    Support information security with organizational policies and programs.
+    Security policy, awareness training, and incident response must be established.
+  parameters:
+    security_policy_required: true
+  version: "1.0.0"
+  when:
+    - fact: policy.information_security.exists
+      equals: true
+    - fact: policy.information_security.reviewed_annually
+      equals: true
+    - fact: training.security_awareness.annual
+      equals: true
+    - fact: incident.response_plan.tested_annually
+      equals: true
+  passIf: all
+  evidence:
+    - policy.information_security.last_updated
+    - training.security_awareness.completion_rate
+    - incident.response_plan.last_tested
+  failMessage: |
+    Security policies inadequate. Require information security policy,
+    annual reviews, security awareness training, and incident response testing.
